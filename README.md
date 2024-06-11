@@ -1,5 +1,9 @@
 # tzfe
 
+Crypto keystore demo on the STM32MP157F-DK2.
+
+## Motivation
+
 A crypto keystore, fundamentally, serves as a secure storage mechanism for cryptographic keys for various cryptographic operations. The primary functions and features of a rudimentary crypto keystore may include:
 
 - Secure Storage: secure repository for cryptographic keys, ensuring that they are stored in an encrypted form and protected from unauthorized access.
@@ -16,3 +20,23 @@ In today's security landscape it is attractive to encapsulate such a system in a
     - encrypt an arbitrary input string using the asymmetric key pair stored under the tag `tag`, and return the encrypted result back to the caller
 
 We will develop such components for the OP-TEE and OpenSTLinux stack deployed on the STM32MP157F-DK2.
+
+## Development Environment: STM32MP157F-DK2
+
+### Secure Boot Chain
+
+### Flash Layout
+
+### Build System
+
+- Starter Package
+- Developer Package
+- Distribution Package
+
+## Implementation
+
+### OP-TEE Trusted Application
+
+### OpenSTLinux Client Application
+
+## Conclusion
