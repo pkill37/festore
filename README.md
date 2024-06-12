@@ -40,3 +40,18 @@ We will develop such components for the OP-TEE and OpenSTLinux stack deployed on
 ### OpenSTLinux Client Application
 
 ## Conclusion
+
+
+Include the boot loader sequence
+Show the strace output
+Mention the role of /usr/lib/libtec.so
+The part where communication with the TEE starts
+Copy and paste the logs from ./stlink.sh
+Include the boot output
+Point this out in the report -> /var/lib/tee"
+
+**Strace Analysis:** Use the `strace` tool to trace system calls and signals during the boot process and communication with the TEE
+**TEE Communication:** Identify the exact point in the logs where communication with the TEE begins
+**stlink.sh Logs:** Paste and anaylise the logs from `stlink.sh` 
+**Boot Output:** Include the output generated during the STM32's boot sequence, and early stage interactions with OP-TEE
+**/var/lib/tee:** Anaylise and mention /var/lib/tee 
