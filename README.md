@@ -1,14 +1,10 @@
-# tzfe
+# festore
 
-Crypto keystore demo on the STM32MP157F-DK2.
+REE-backed secure storage on the STM32MP157F-DK2.
 
 ## Motivation
 
-A crypto keystore, fundamentally, serves as a secure storage mechanism for cryptographic keys for various cryptographic operations. The primary functions and features of a rudimentary crypto keystore may include:
-
-- Secure Storage: secure repository for cryptographic keys, ensuring that they are stored in an encrypted form and protected from unauthorized access.
-- Key Management: key generation, deletion, etc.
-- Cryptographic Operations: encryption and decryption directly within the keystore environment, enhancing security by minimizing the exposure of keys.
+Secure storage is an important primitive for building secure applications which can be built on trusted execution environments.
 
 In today's security landscape it is attractive to encapsulate such a system in a trusted execution environment where it may run with higher security guarantees. Let's imagine a very simple crypto keystore offering only APIs for asymmetric keypair generation and asymmetric encryption. Such a naive keystore leveraging a TEE could consist of two components:
 
@@ -23,9 +19,21 @@ We will develop such components for the OP-TEE and OpenSTLinux stack deployed on
 
 ## Development Environment: STM32MP157F-DK2
 
+We picked the STM32MP157F-DK2 board for development due to it being well supported on the OP-TEE and the Arm Trusted Firmware.
+
 ### Secure Boot Chain
 
+![image](https://github.com/pkill37/festore/assets/180382/250e9485-3d49-4eb0-bfc3-2f5cf747230a)
+
+1. The ROM code starts the processor in secure mode. It supports the FSBL authentication and offers authentication services to the FSBL.
+2. The First stage bootloader (FSBL) is executed from the SYSRAM. Among other things, this bootloader initializes (part of) the clock tree and the DDR controller. Finally, the FSBL loads the second-stage bootloader (SSBL) into the DDR external RAM and jumps to it. The bootloader stage 2, so called TF-A BL2, is the Trusted Firmware-A (TF-A) binary used as FSBL on STM32MP15.
+3. Second stage bootloader (SSBL) U-Boot is commonly used as a bootloader in embedded software and it is the one used on STM32MP15.
+4. Linux® OS is loaded in DDR by U-Boot and executed in the non-secure context.
+5. Secure OS / Secure monitor. The Cortex-A7 secure world supports OP-TEE secure OS which is loaded by TF-A BL2.
+
 ### Flash Layout
+
+![image](https://github.com/pkill37/festore/assets/180382/598c2649-be5c-43f2-b61f-be3530324bc3)
 
 ### Build System
 
@@ -37,10 +45,13 @@ We will develop such components for the OP-TEE and OpenSTLinux stack deployed on
 
 ### OP-TEE Trusted Application
 
+Trusted application is in `festore/ta/`.
+
 ### OpenSTLinux Client Application
 
-## Conclusion
+Client application is in `festore/host/`.
 
+## Results
 
 Include the boot loader sequence
 Show the strace output
@@ -51,7 +62,8 @@ Include the boot output
 Point this out in the report -> /var/lib/tee"
 
 **Strace Analysis:** Use the `strace` tool to trace system calls and signals during the boot process and communication with the TEE
-**TEE Communication:** Identify the exact point in the logs where communication with the TEE begins
-**stlink.sh Logs:** Paste and anaylise the logs from `stlink.sh` 
+**stlink.sh Logs:** Paste and anaylise the logs from `stlink.sh`
 **Boot Output:** Include the output generated during the STM32's boot sequence, and early stage interactions with OP-TEE
 **/var/lib/tee:** Anaylise and mention /var/lib/tee 
+
+## Conclusion
