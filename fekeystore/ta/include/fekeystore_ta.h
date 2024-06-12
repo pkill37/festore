@@ -11,7 +11,6 @@
 		{ 0xb4, 0xc5, 0x9f, 0xb6, 0xae, 0x25, 0x64, 0x23} }
 
 /* The function IDs implemented in this TA */
-#define TA_FEKEYSTORE_CMD_INC_VALUE		0
-#define TA_FEKEYSTORE_CMD_DEC_VALUE		1
+#define TA_FEKEYSTORE_CMD_WRITE_OBJECT		0
 
 #endif /*TA_FEKEYSTORE_H*/

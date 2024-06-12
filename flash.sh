@@ -26,10 +26,10 @@ make -f $PWD/../Makefile.sdk \
 	UBOOT_CONFIG=optee \
 	UBOOT_DEFCONFIG=stm32mp15_trusted_defconfig \
 	UBOOT_BINARY=u-boot.dtb \
-	DEVICETREE="stm32mp157f-ev1 stm32mp157f-dk2" \
+	DEVICETREE="stm32mp157f-dk2" \
 	CFG_EMBED_DTB_SOURCE_FILE="stm32mp157f-dk2" \
-	CFG_WITH_USER_TA="y"
-	#CFG_STM32MP1_OPTEE_IN_SYSRAM="y" \
+	CFG_WITH_USER_TA="y" \
+	CFG_REE_FS="y"
 ls -lah $FIP_DEPLOYDIR_FIP/
 
 if="$FIP_DEPLOYDIR_FIP/fip-stm32mp157f-dk2-optee.bin"

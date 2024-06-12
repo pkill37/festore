@@ -3,8 +3,9 @@ set -e
 
 workdir=$(pwd)
 
-echo "Please insert the microSD card into the host computer now and enter the mount point of the rootfs: (e.g. /media/fabio/rootfs)"
-read rootfs_dir
+echo "Please insert the microSD card into the host computer now, and press ENTER..."
+read _ 
+rootfs_dir="/media/$USERNAME/rootfs"
 
 sudo cp -v ./fekeystore/host/optee_fekeystore $rootfs_dir/usr/bin
 

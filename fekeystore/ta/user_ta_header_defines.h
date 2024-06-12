@@ -26,12 +26,12 @@
 #define TA_VERSION	"1.0"
 
 /* The gpd.ta.description property */
-#define TA_DESCRIPTION	"Simple keystore TA for OP-TEE"
+#define TA_DESCRIPTION	"Simple secure storage TA for OP-TEE"
 
 /* Extra properties */
 #define TA_CURRENT_TA_EXT_PROPERTIES \
     { "gp.ta.description", USER_TA_PROP_TYPE_STRING, \
-        "Example of TA using asymmetric cipher" }, \
+        "Example of secure storage" }, \
     { "gp.ta.version", USER_TA_PROP_TYPE_U32, &(const uint32_t){ 0x0010 } }
 
 #endif /* USER_TA_HEADER_DEFINES_H */
