@@ -1,7 +1,7 @@
 #include <tee_internal_api.h>
 #include <tee_internal_api_extensions.h>
 
-#include <fekeystore_ta.h>
+#include <festore_ta.h>
 
 /*
  * Called when the instance of the TA is created. This is the first call in
@@ -9,7 +9,7 @@
  */
 TEE_Result TA_CreateEntryPoint(void)
 {
-	DMSG("FEKEYSTORE create entry point");
+	DMSG("FESTORE create entry point");
 	return TEE_SUCCESS;
 }
 
@@ -19,7 +19,7 @@ TEE_Result TA_CreateEntryPoint(void)
  */
 void TA_DestroyEntryPoint(void)
 {
-	DMSG("FEKEYSTORE destroy entry point");
+	DMSG("FESTORE destroy entry point");
 }
 
 /*
@@ -35,7 +35,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types, TEE_Param __maybe_unus
 						   TEE_PARAM_TYPE_NONE,
 						   TEE_PARAM_TYPE_NONE);
 
-	IMSG("FEKEYSTORE open entry point");
+	IMSG("FESTORE open entry point");
 
 	if (param_types != exp_param_types)
 		return TEE_ERROR_BAD_PARAMETERS;
@@ -55,7 +55,7 @@ TEE_Result TA_OpenSessionEntryPoint(uint32_t param_types, TEE_Param __maybe_unus
 void TA_CloseSessionEntryPoint(void __maybe_unused *sess_ctx)
 {
 	(void)&sess_ctx; /* Unused parameter */
-	IMSG("FEKEYSTORE close entry point");
+	IMSG("FESTORE close entry point");
 }
 
 static TEE_Result write_object(uint32_t param_types, TEE_Param params[4])
@@ -133,7 +133,7 @@ static TEE_Result write_object(uint32_t param_types, TEE_Param params[4])
 TEE_Result TA_InvokeCommandEntryPoint(void __maybe_unused *session, uint32_t cmd_id, uint32_t param_types, TEE_Param params[4])
 {
 	switch (cmd_id) {
-	case TA_FEKEYSTORE_CMD_WRITE_OBJECT:
+	case TA_FESTORE_CMD_WRITE_OBJECT:
 		return write_object(param_types, params);
 	default:
 		return TEE_ERROR_BAD_PARAMETERS;

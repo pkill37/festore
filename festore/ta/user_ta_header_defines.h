@@ -6,9 +6,9 @@
 #define USER_TA_HEADER_DEFINES_H
 
 /* To get the TA UUID definition */
-#include <fekeystore_ta.h>
+#include <festore_ta.h>
 
-#define TA_UUID				TA_FEKEYSTORE_UUID
+#define TA_UUID				TA_FESTORE_UUID
 
 /*
  * TA properties: multi-instance TA, no specific attribute

@@ -4,7 +4,7 @@
 
 #include <tee_client_api.h>
 
-#include <fekeystore_ta.h>
+#include <festore_ta.h>
 
 /* TEE resources */
 struct test_ctx {
@@ -14,7 +14,7 @@ struct test_ctx {
 
 void prepare_tee_session(struct test_ctx *ctx)
 {
-	TEEC_UUID uuid = TA_FEKEYSTORE_UUID;
+	TEEC_UUID uuid = TA_FESTORE_UUID;
 	uint32_t origin;
 	TEEC_Result res;
 
@@ -55,7 +55,7 @@ static TEEC_Result write_object(struct test_ctx *ctx, char *id, char *data, size
 	op.params[1].tmpref.buffer = data;
 	op.params[1].tmpref.size = data_len;
 
-	res = TEEC_InvokeCommand(&ctx->sess, TA_FEKEYSTORE_CMD_WRITE_OBJECT, &op, &origin);
+	res = TEEC_InvokeCommand(&ctx->sess, TA_FESTORE_CMD_WRITE_OBJECT, &op, &origin);
 	if (res != TEEC_SUCCESS)
 		printf("Command WRITE_RAW failed: 0x%x / %u\n", res, origin);
 
