@@ -31,9 +31,23 @@ The boot switches on the back of the motherboard allow to control the boot mode:
 
 ### Flash Layout
 
-The board has an eMMC interface with a microSD that is used as the main flash memory. Besides the boot ROM, it is where all software is stored. Flashing software on this board effectively means to write to the microSD card, according to a flash layout.
+The board has an eMMC interface with a microSD that is used as the main flash memory. Besides the boot ROM, it is where all software is stored. Flashing software on this board effectively means to write to the microSD card, according to a flash layout. It follows the following partitioning scheme:
 
 ![image](https://github.com/pkill37/festore/assets/180382/598c2649-be5c-43f2-b61f-be3530324bc3)
+
+The more important partitions include:
+
+- **userfs:** The user's home directory.
+- **rootfs:** Linux root file system contains all user space binaries (executable, libraries, and so on), and kernel modules
+- **bootfs:** The boot file system contains software relevant for booting the system after the second stage bootloader
+  - optionally an init RAM file system, which can be copied to the external RAM and used by Linux before mounting a fatter rootfs
+  - Linux kernel device tree
+  - Linux kernel U-Boot image
+- **fip:** The TF-A firmware image package (FIP) is a binary file that encapsulates several binaries that will be loaded by TF-A BL2:
+  - the second stage boot loader (SSBL):
+  - U-Boot binary
+  - U-Boot device tree blob
+  - the OP-TEE
 
 ### Software Packages
 
@@ -111,20 +125,20 @@ make -f $PWD/../Makefile.sdk \
 	CFG_WITH_USER_TA="y" \
 	CFG_REE_FS="y"
 ls -lah $FIP_DEPLOYDIR_FIP/
-
-if="$FIP_DEPLOYDIR_FIP/fip-stm32mp157f-dk2-optee.bin"
-of="$(readlink -f /dev/disk/by-partlabel/fip-a)"
-while ! ls -lah $of ; do 
-	echo "Please mount the microSD card"
-	sleep 5
-done
-sudo dd if=$if of=$of bs=1M conv=fdatasync
 ```
 
 Specifically we cared to configure:
 - `CFG_REE_FS` to enable the file storage initiated by the TEE on the REE
 - `CFG_WITH_USER_TA` to enable user loaded trusted applications (otherwise your host applications will not find your trusted applications)
 - `CFG_EMBED_DTB_SOURCE_FILE` and `DEVICETREE` to minimally point to our board rather than the whole ecosystem of boards
+
+After building we must flash the fip partition image on the mounted microSD card:
+
+```
+if="$FIP_DEPLOYDIR_FIP/fip-stm32mp157f-dk2-optee.bin"
+of="$(readlink -f /dev/disk/by-partlabel/fip-a)"
+sudo dd if=$if of=$of bs=1M conv=fdatasync
+```
 
 ### OP-TEE Trusted Application
 
