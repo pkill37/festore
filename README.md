@@ -42,11 +42,6 @@ The board has an eMMC interface with a microSD that is used as the main flash me
 
 ![image](https://github.com/pkill37/festore/assets/180382/598c2649-be5c-43f2-b61f-be3530324bc3)
 
-When the board configuration switches are set to
-
-![image](https://github.com/pkill37/festore/assets/180382/7cedb9ad-b423-4a6c-b8a1-b960563de30c)
-
-
 ### Software Packages
 
 We used the following software packages as described by ST:
@@ -74,7 +69,6 @@ ST also describes something called the "distribution package" which is intended 
   - The SSBL runs in a wide RAM so it can implement complex features for loading the Linux kernel and the userspace. U-Boot is commonly used as a Linux bootloader in embedded systems.
     - The Linux kernel is started (in non-secure context) in the external memory and it initializes all the peripheral drivers that are needed on the platform. Then the kernel hands control to the user space starting the init process.
   - The FSBL starts the secure monitor and the OP-TEE OS.
-
 
 Attached in `boot_log.txt` is a copy of the entire boot log found in the serial port of the device. The `stlink.sh` contains a small script to get these logs by connecting to the ST-LINK serial port which is available through a front-facing micro USB interface on the board.
 
@@ -131,19 +125,45 @@ Trusted application is in `festore/ta/`.
 
 Client application is in `festore/host/`.
 
-## Results
+### Demonstration
 
-Include the boot loader sequence
-Show the strace output
-Mention the role of /usr/lib/libtec.so
-The part where communication with the TEE starts
-Copy and paste the logs from ./stlink.sh
-Include the boot output
-Point this out in the report -> /var/lib/tee"
+The REE host application is deployed under `/usr/bin/optee_festore` which can be analyzed with strace:
 
-**Strace Analysis:** Use the `strace` tool to trace system calls and signals during the boot process and communication with the TEE
-**stlink.sh Logs:** Paste and anaylise the logs from `stlink.sh`
-**Boot Output:** Include the output generated during the STM32's boot sequence, and early stage interactions with OP-TEE
-**/var/lib/tee:** Anaylise and mention /var/lib/tee 
+```
+root@stm32mp1:~# strace optee_festore
+...
+```
 
-## Conclusion
+The files are stored under `/var/lib/tee` but in encrypted fashion. The data can only be decrypted by the TEE, thus it is completely protected from the REE (non secure world).
+
+```
+root@stm32mp1:/var/lib/tee# ls -lah
+total 72K
+drwxrwx---  2 root tee  4.0K Mar  6 07:53 .
+drwxr-xr-x 14 root root 4.0K Mar  3 09:49 ..
+-rw-------  1 tee  tee  4.2K Mar  5 14:22 0
+-rw-------  1 tee  tee   16K Mar  5 14:22 1
+-rw-------  1 tee  tee   24K Mar  6 07:53 2
+-rw-------  1 tee  tee   16K Mar  6 07:53 dirf.db
+
+root@stm32mp1:/var/lib/tee# hexdump -C 0
+00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00000040  00 00 00 00 c2 a2 2b fb  bc 93 66 bd f8 f1 9f b8  |......+...f.....|
+00000050  c4 4a 74 c3 fc 15 6a 82  e3 d0 f2 5a e3 7e 40 9c  |.Jt...j....Z.~@.|
+00000060  b5 96 1a 0f 64 07 28 6f  fc 3d f9 0b 9f 4f f7 31  |....d.(o.=...O.1|
+00000070  39 01 90 61 9d 6c 2a 16  e3 8e 49 f9 6c 62 3d 98  |9..a.l*...I.lb=.|
+00000080  2f e9 68 a0 01 00 00 00  00 00 00 00 00 00 00 00  |/.h.............|
+00000090  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+00001040  00 00 09 4c 49 31 fd b2  f2 af 41 7c 9e 03 22 a9  |...LI1....A|..".|
+00001050  71 60 06 e8 21 1f e9 01  7f 67 1a c6 e3 25 13 00  |q`..!....g...%..|
+00001060  ac ca 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00001070  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00001080  00 00 00 00                                       |....|
+00001084
+```
+
+### Conclusion
+
+Lorem ipsum
