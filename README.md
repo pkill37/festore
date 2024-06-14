@@ -19,13 +19,6 @@ In today's security landscape it is attractive to encapsulate such secure storag
 
 We picked the STM32MP157F-DK2 board for exploring secure storage on Arm TrustZone for its rich security feature set (secure boot, cryptographic engine, TPM integration). This board is well supported on the OP-TEE (a secure operating system designed for running on TEE) and the Arm Trusted Firmware (open source firmware for first stage bootloaders). It is also clear that ST offers excellent documentation, for getting started as well as diving deeper in the tech stack. 
 
-- https://wiki.st.com/stm32mpu/wiki/STM32MP15_Discovery_kits_-_Starter_Package
-- https://wiki.st.com/stm32mpu/wiki/STM32MP1_Developer_Package
-- https://wiki.st.com/stm32mpu/wiki/How_to_develop_an_OP-TEE_Trusted_Application
-- https://wiki.st.com/stm32mpu/wiki/How_to_configure_OP-TEE
-- https://wiki.st.com/stm32mpu/wiki/STM32MP1_Developer_Package
-- https://wiki.st.com/stm32mpu/wiki/Boot_chain_overview
-
 ### Hardware
 
 The boot switches on the back of the motherboard allow to control the boot mode:
@@ -44,7 +37,7 @@ The board has an eMMC interface with a microSD that is used as the main flash me
 
 ### Software Packages
 
-We used the following software packages as described by ST:
+We used the following software packages which must be obtained independently on the ST website:
 
 - Starter Package: `en.flash-stm32mp1-openstlinux-6-1-yocto-mickledore-mp1-v23-06-21.tar.gz`
 - Developer Package
@@ -53,9 +46,25 @@ We used the following software packages as described by ST:
 
 We use the starter package to flash an initial working version of the entire software stack on the board, which in ST's documentation also serves as an introduction to their platform and validation that the board is working. It consists of partition images, flash layout descriptions, binaries for OpenSTLinux, etc.
 
-The developer package contains the SDK for all development on the Cortex-A, as well as an entire BSP with compiler toolchains, source code, device trees, etc. used for modifying components such as the U-Boot, TF-A, or OP-TEE OS.
+```
+$ STM32_Programmer_CLI -l usb
+$ tar xzvf en.flash-stm32mp1-openstlinux-6-1-yocto-mickledore-mp1-v23-06-21.tar.gz" ] && exit 1
+$ cd stm32mp1-openstlinux-6.1-yocto-mickledore-mp1-v23.06.21/images/stm32mp1
+$ STM32_Programmer_CLI -c port=usb1 -w flashlayout_st-image-weston/optee/FlashLayout_sdcard_stm32mp157f-dk2-optee.tsv
+```
 
-For our purposes we care to build individual software components (using the same build system and toolchains) that can be "overlayed" within the flashed partition images (which can be mounted and modified on a host computer). Alternatively the developer package can be used to build concrete partition images that can completely replaced the already flashed partition images, which can be necessary for small changes like configuration build options for the OP-TEE.
+The developer package contains the SDK for all development on the Cortex-A, as well as an entire BSP with compiler toolchains, source code, device trees, etc. used for modifying components such as the U-Boot, TF-A, or OP-TEE OS. The SDK can be installed by running the SDK installation script:
+
+```
+$ tar xzvf en.SDK-x86_64-stm32mp1-openstlinux-6.1-yocto-mickledore-mp1-v23.06.21.tar.gz
+$ ./en.SDK-x86_64-stm32mp1-openstlinux-6.1-yocto-mickledore-mp1-v23.06.21/stm32mp1-openstlinux-6.1-yocto-mickledore-mp1-v23.06.21/sdk/st-image-weston-openstlinux-weston-stm32mp1-x86_64-toolchain-4.2.1-openstlinux-6.1-yocto-mickledore-mp1-v23.06.21.sh -d ./SDK
+```
+
+For our purposes we care to build individual software components (using the same build system and toolchains) that can be "overlayed" within the flashed partition images (which can be mounted and modified on a host computer). Alternatively the developer package can be used to build concrete partition images that can completely replaced the already flashed partition images, which can be necessary for small changes like configuration build options for the OP-TEE. Using the developer package boils down to sourcing an environment script that configures typical build system environment variables such as `$CROSS_COMPILE`, `$CC`, etc. These variables are picked up by the build system to build for the right targets.
+
+```
+$ . ./SDK/environment-setup-cortexa7t2hf-neon-vfpv4-ostl-linux-gnueabi
+```
 
 ST also describes something called the "distribution package" which is intended for final release and distribution in commercial products, not for convenient development and engineering. We did not use this because it did not concern us pedagogically.
 
