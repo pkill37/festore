@@ -65,6 +65,25 @@ The more important partitions include:
 
 On other boards there are eMMC interfaces where the physical hardware boot partitions can be used for the FSBL.
 
+When you mount it in a Linux system you should see the following partition tree:
+
+```
+$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+sda           8:0    1  14.8G  0 disk 
+├─sda1        8:1    1   256K  0 part 
+├─sda2        8:2    1   256K  0 part 
+├─sda3        8:3    1   256K  0 part 
+├─sda4        8:4    1   256K  0 part 
+├─sda5        8:5    1     4M  0 part 
+├─sda6        8:6    1     4M  0 part 
+├─sda7        8:7    1   512K  0 part 
+├─sda8        8:8    1    64M  0 part /media/fabio/bootfs
+├─sda9        8:9    1    16M  0 part /media/fabio/vendorfs
+├─sda10       8:10   1     4G  0 part /media/fabio/rootfs
+└─sda11       8:11   1  10.7G  0 part /media/fabio/userfs
+```
+
 ### Software Packages
 
 We used the following software packages which must be obtained independently on the ST website:
