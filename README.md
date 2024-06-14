@@ -21,17 +21,30 @@ We picked the STM32MP157F-DK2 board for exploring secure storage on Arm TrustZon
 
 ### Hardware
 
-The boot switches on the back of the motherboard allow to control the boot mode:
+The STM32MP157F-DK2 Discovery kits packages are delivered fully assembled, and a USB Type-C cable is also included for USB programming. An additional micro USB cable is necessary for connecting to the ST-LINK debugging serial port.
+
+![image](https://github.com/pkill37/festore/assets/180382/fa9bb707-a38e-4c66-a8d2-7da609141619)
+
+1. MB1272 motherboard: STM32MP157x 12x12, PMIC, DDR3
+2. MicroSD card slot
+3. 2x USB Type-A (host) for mouse, keyboard or other USB driver
+4. 2x USB Type-A (host)
+5. USB micro-B (ST-LINK/V2-1) for PC virtual COM port and debug
+6. Reset button
+7. Ethernet → Network
+8. USB Type-C (power 5V-3A)
+
+The boot switches on the back of the motherboard allow to control what happens when power is given to boot the system:
 
 #### Forced USB boot for flashing
 ![image](https://github.com/pkill37/festore/assets/180382/632b09a6-2648-4804-8e24-1d30c6089434)
 
-#### Boot from microSD card
+#### Boot system from microSD card
 ![image](https://github.com/pkill37/festore/assets/180382/808f6d6c-ef1f-4b85-8695-b6e025dd8918)
 
 ### Flash Layout
 
-The board has an eMMC interface with a microSD that is used as the main flash memory. Besides the boot ROM, it is where all software is stored. Flashing software on this board effectively means to write to the microSD card, according to a flash layout. It follows the following partitioning scheme:
+The board has an SDMMC interface with a microSD that is used as the main flash memory. Besides the boot ROM, it is where all software is stored. Flashing software on this board effectively means to write to the microSD card, according to a flash layout. It follows the following partitioning scheme:
 
 ![image](https://github.com/pkill37/festore/assets/180382/598c2649-be5c-43f2-b61f-be3530324bc3)
 
@@ -48,6 +61,9 @@ The more important partitions include:
   - U-Boot binary
   - U-Boot device tree blob
   - the OP-TEE
+- **fsbl**: The first stage boot loader is Arm Trusted Firmware (TF-A).
+
+On other boards there are eMMC interfaces where the physical hardware boot partitions can be used for the FSBL.
 
 ### Software Packages
 
