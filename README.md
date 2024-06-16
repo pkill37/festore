@@ -175,17 +175,72 @@ of="$(readlink -f /dev/disk/by-partlabel/fip-a)"
 sudo dd if=$if of=$of bs=1M conv=fdatasync
 ```
 
+### OpenSTLinux Client Application
+
+The client application for OpenSTLinux interacts with a Trusted Execution Environment (TEE) for secure storage services. The application demonstrates how to prepare a session with the TEE, write an object into secure storage, and then terminate the session.
+
+#### TEE Session and Context
+
+There is a helper structure `struct test_ctx` to keep track of TEE session and context.
+
+```
+struct test_ctx {
+    TEEC_Context ctx;
+    TEEC_Session sess;
+};
+```
+
+This is used in the basic flow of dealing with the TEE session and context:
+
+- `prepare_tee_session`:  initializes the TEE context and opens a session with the TA
+	- `TEEC_InitializeContext`: establishes a connection to the TEE.
+	- `TEEC_OpenSession`: opens a session with the specified TA using its UUID.
+- `terminate_tee_session`: closes the session and finalizes the context to release TEE resources.
+  	- `TEEC_CloseSession`: close the session with the TA
+  	- `TEEC_FinalizeContext`: close the connection with the TEE
+
+#### Prepare Operation Parameters
+
+A big part of writing applications for OP-TEE is preparing the operation before issuing the TEE command.
+
+```
+TEEC_Operation op;  memset(&op, 0, sizeof(op));
+op.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_MEMREF_TEMP_INPUT, TEEC_NONE, TEEC_NONE);
+op.params[0].tmpref.buffer = id;
+op.params[0].tmpref.size = id_len;
+op.params[1].tmpref.buffer = data;
+op.params[1].tmpref.size = data_len;
+```
+
+- `op.paramTypes` specifies the types of parameters being passed to the TEE command which is set to the macro `TEEC_PARAM_TYPES(TEEC_MEMREF_TEMP_INPUT, TEEC_MEMREF_TEMP_INPUT, TEEC_NONE, TEEC_NONE)` that defines the types of the four parameters. In this case:
+	- The first parameter is a temporary memory reference for input.
+	- The second parameter is also a temporary memory reference for input.
+	- The third and fourth parameters are not used (TEEC_NONE).
+- `op.params` holds the parameters in temporary buffers together with its size.
+	- `op.params[0].tmpref.buffer = id` sets the buffer for the first parameter to the object identifier.
+	- `op.params[1].tmpref.buffer = data` sets the buffer for the second parameter to the data to be written.
+
+#### Invoke Command
+
+Finally the command is issued to the TEE via the Linux kernel driver:
+
+```
+uint32_t origin;
+TEEC_Result res = TEEC_InvokeCommand(&ctx->sess, TA_FESTORE_CMD_WRITE_OBJECT, &op, &origin);
+if (res != TEEC_SUCCESS)
+    printf("Command WRITE_RAW failed: 0x%x / %u\n", res, origin);
+```
+
+- `TEEC_InvokeCommand(&ctx->sess, TA_FESTORE_CMD_WRITE_OBJECT, &op, &origin)` Invokes the TEE command identified by `TA_FESTORE_CMD_WRITE_OBJECT` using the global session with the parameters specified in `op`. 
+- if the command invocation was not successful, the response code and the origin of the error are printed for debugging
+
 ### OP-TEE Trusted Application
 
 Trusted application is in `festore/ta/`.
 
-### OpenSTLinux Client Application
-
-Client application is in `festore/host/`.
-
 ### Demonstration
 
-The REE host application is deployed under `/usr/bin/optee_festore` which can be analyzed with strace:
+The REE host application is deployed under `/usr/bin/optee_festore` which can be analyzed with strace to follow the calls up to the Linux kernel driver.
 
 ```
 root@stm32mp1:~# strace optee_festore
@@ -204,7 +259,7 @@ drwxr-xr-x 14 root root 4.0K Mar  3 09:49 ..
 -rw-------  1 tee  tee   24K Mar  6 07:53 2
 -rw-------  1 tee  tee   16K Mar  6 07:53 dirf.db
 
-root@stm32mp1:/var/lib/tee# hexdump -C 0
+root@stm32mp1:/var/lib/tee# hexdump -C 2
 00000000  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
 *
 00000040  00 00 00 00 c2 a2 2b fb  bc 93 66 bd f8 f1 9f b8  |......+...f.....|
