@@ -222,7 +222,7 @@ op.params[1].tmpref.size = data_len;
 
 #### Invoke Command
 
-Finally the command is issued to the TEE via the Linux kernel driver:
+Finally the command is issued to the TEE via the shared library `/usr/lib/teec.so` which in turn talks to the Linux kernel driver:
 
 ```
 uint32_t origin;
@@ -236,18 +236,132 @@ if (res != TEEC_SUCCESS)
 
 ### OP-TEE Trusted Application
 
-Trusted application is in `festore/ta/`.
+A trusted application in OP-TEE can be seen as a series of entrypoints that can be hooked by handler functions:
+- Create entrypoint
+- Destroy entrypoint
+- Open session entrypoint
+- Invoke command entrypoint
+- Close session entrypoint
+
+Many of these entrypoints are rather thin boilerplate functions that are rarely useful, except for `TA_InvokeCommandEntryPoint` which serves as a dispatcher for handling calls to the TA. We have only one command for the demonstration, therefore the dispatching is a rather short switch statement.
+
+```
+TEE_Result TA_InvokeCommandEntryPoint(void __maybe_unused *session, uint32_t cmd_id, uint32_t param_types, TEE_Param params[4])
+{
+    switch (cmd_id) {
+    case TA_FESTORE_CMD_WRITE_OBJECT:
+        return write_object(param_types, params);
+    default:
+        return TEE_ERROR_BAD_PARAMETERS;
+    }
+}
+```
+
+Thus the focus is again on the `write_object` method that handles the command invocation on the TEE.
+
+#### Parameter Verification
+
+OP-TEE gives an interface that allows ensuring the parameter types given to the TA are the expected types. In this case it expects two input memory references: a string for the object ID and another for its actual data to be stored.
+
+```
+const uint32_t exp_param_types =
+    TEE_PARAM_TYPES(TEE_PARAM_TYPE_MEMREF_INPUT,
+                    TEE_PARAM_TYPE_MEMREF_INPUT,
+                    TEE_PARAM_TYPE_NONE,
+                    TEE_PARAM_TYPE_NONE);
+
+if (param_types != exp_param_types)
+    return TEE_ERROR_BAD_PARAMETERS;
+```
+
+#### Parameter Memory Allocation
+
+OP-TEE operates in the secure world which is separate from the non secure world. The parameters passed to the TA from the non-secure world need to be handled carefully to maintain security and integrity. Directly using the pointers provided in the parameters could expose the TA to vulnerabilities such as:
+
+- Buffer Overflow/Underflow: Directly accessing buffers without validation could lead to memory corruption.
+- Non-Secure Memory Access: Accessing non-secure memory directly could introduce security risks where secure data might get exposed or non-secure data might be improperly trusted.
+
+Allocating memory within the TA ensures that the data is securely handled within the trusted memory space. Thus in the TA command invocation we allocate memory for the object ID and the data just before writing to storage.
+
+```
+size_t obj_id_sz = params[0].memref.size;
+char *obj_id = TEE_Malloc(obj_id_sz, 0);
+if (!obj_id)
+    return TEE_ERROR_OUT_OF_MEMORY;
+TEE_MemMove(obj_id, params[0].memref.buffer, obj_id_sz);
+
+size_t data_sz = params[1].memref.size;
+char *data = TEE_Malloc(data_sz, 0);
+if (!data)
+    return TEE_ERROR_OUT_OF_MEMORY;
+TEE_MemMove(data, params[1].memref.buffer, data_sz);
+```
+
+#### Creating Persistent Object
+
+The data we want to write should be persisted across TA instances and reboots. This is what is called a persistent object and it has a specific API, distinct from the transient objects API which supports temporary objects that are typically used for temporary cryptographic operations where the objects should not be retained.
+
+
+To create a persistent object the method `TEE_CreatePersistentObject` is used:
+
+```
+obj_data_flag = TEE_DATA_FLAG_ACCESS_READ |
+                TEE_DATA_FLAG_ACCESS_WRITE |
+                TEE_DATA_FLAG_ACCESS_WRITE_META |
+                TEE_DATA_FLAG_OVERWRITE;
+
+res = TEE_CreatePersistentObject(TEE_STORAGE_PRIVATE_REE,
+                                 obj_id, obj_id_sz,
+                                 obj_data_flag,
+                                 TEE_HANDLE_NULL,
+                                 NULL, 0,
+                                 &object);
+if (res != TEE_SUCCESS) {
+    EMSG("TEE_CreatePersistentObject failed 0x%08x", res);
+    TEE_Free(obj_id);
+    TEE_Free(data);
+    return res;
+}
+```
+
+Noteworthy are:
+- The data access flags
+	- `TEE_DATA_FLAG_ACCESS_READ`: The object is opened with the read access right. This allows the Trusted Application to call the function `TEE_ReadObjectData`.
+	- `TEE_DATA_FLAG_ACCESS_WRITE`: The object is opened with the write access right. This allows the Trusted Application to call the functions `TEE_WriteObjectData` and `TEE_TruncateObjectData`.
+	- `TEE_DATA_FLAG_ACCESS_WRITE_META`: The object is opened with the write-meta access right. This allows the Trusted Application to call the functions `TEE_CloseAndDeletePersistentObject` and `TEE_RenamePersistentObject`.
+ 	- `TEE_DATA_FLAG_OVERWRITE`: If this flag is present and the object exists, then the object is deleted and re-created as an atomic operation: that is the TA sees either the old object or the new one. If the flag is absent and the object exists, then the function SHALL return `TEE_ERROR_ACCESS_CONFLICT`.
+- `TEE_STORAGE_PRIVATE_REE` determines that the REE's filesystem is used as a storage backend, which for security tells OP-TEE to encrypt the data in such a way that only the TA can read it thus being safe from attackers in the REE.
+- `TEE_HANDLE_NULL` is specifying that there is no handle on a persistent object to take attributes from because it is a pure data object.
+
+#### Write Data to Secure Storage
+
+Finally we write the persistent object and cleanup appropriately:
+
+```
+res = TEE_WriteObjectData(object, data, data_sz);
+if (res != TEE_SUCCESS) {
+    EMSG("TEE_WriteObjectData failed 0x%08x", res);
+    TEE_CloseAndDeletePersistentObject1(object);
+} else {
+    TEE_CloseObject(object);
+}
+TEE_Free(obj_id);
+TEE_Free(data);
+return res;
+```
 
 ### Demonstration
 
-The REE host application is deployed under `/usr/bin/optee_festore` which can be analyzed with strace to follow the calls up to the Linux kernel driver.
+The files are stored securely in the REE under `/var/lib/tee`.  All normal world files are integrity protected and encrypted as configured by our code. A directory file, `/var/lib/tee/dirf.db`, lists all the objects that are in the secure storage.
+
+The REE client application is deployed under `/usr/bin/optee_festore` which can be analyzed with strace to follow the calls up to the Linux kernel driver.
 
 ```
 root@stm32mp1:~# strace optee_festore
 ...
 ```
 
-The files are stored under `/var/lib/tee` but in encrypted fashion. The data can only be decrypted by the TEE, thus it is completely protected from the REE (non secure world).
+After running the client application we should see a new file in `/var/lib/tee`:
 
 ```
 root@stm32mp1:/var/lib/tee# ls -lah
@@ -279,4 +393,10 @@ root@stm32mp1:/var/lib/tee# hexdump -C 2
 
 ### Conclusion
 
-Lorem ipsum
+In short we have implemented an application that demonstrates a simple secure storage mechanism that leverages the REE filesystem as a "backend" for actually storing the data, but its encryption and integrity protection is done in the TEE trusted application.
+
+Alternatively, instead of using the REE's filesystem, future work could be to leverage RPMB secure storage. The RPMB is a special area of the eMMC flash that provides:
+
+1. **Replay Protection:** To prevent replay attacks, each write must include a monotonically increasing counter (stored in the secure memory) which must be higher than the previous write's counter, otherwise rejecting the write.
+2. **Authentication:** Each write has a MAC to ensure the data was not modified in transit, which can be verified when reading as well.
+3. **Secure Key Provisioning:** The keys used for the MAC generation are either provisioned securely during manufacturing, or isolated in secure hardware such as a discrete TPM.
